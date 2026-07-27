@@ -2,7 +2,6 @@
 
 ## Frontend
 
-- Next.js
 - React
 - TypeScript
 - TailwindCSS
@@ -12,7 +11,7 @@
 
 ## Backend
 
-- NestJS
+- express
 - TypeScript
 - Prisma ORM
 
