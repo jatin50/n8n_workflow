@@ -1,0 +1,17 @@
+model Workspace {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  owner       User         @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  workflows   Workflow[]
+  credentials Credential[]
+  variables   Variable[]
+  apiKeys     APIKey[]
+  auditLogs   AuditLog[]
+
+  @@index([ownerId])
+  @@map("workspaces")
+}

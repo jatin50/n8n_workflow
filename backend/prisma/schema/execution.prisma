@@ -1,0 +1,38 @@
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model Execution {
+  id         String          @id @default(cuid())
+  workflowId String
+  status     ExecutionStatus @default(PENDING)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  duration   Int? // milliseconds
+  logs       String?
+
+  workflow Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  data     ExecutionData[]
+
+  @@index([workflowId])
+  @@map("executions")
+}
+
+model ExecutionData {
+  id          String @id @default(cuid())
+  executionId String
+  nodeId      String
+  input       Json?
+  output      Json?
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  node      Node      @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([nodeId])
+  @@map("execution_data")
+}

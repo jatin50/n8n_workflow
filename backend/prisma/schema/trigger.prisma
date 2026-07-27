@@ -1,0 +1,11 @@
+model Trigger {
+  id            String @id @default(cuid())
+  workflowId    String
+  type          String // e.g. "webhook", "schedule", "manual"
+  configuration Json   @default("{}")
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@map("triggers")
+}

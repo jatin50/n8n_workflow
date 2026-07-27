@@ -1,0 +1,14 @@
+// This is the ONLY file that holds the generator + datasource blocks.
+// Everything else in this folder is model files — Prisma merges all
+// .prisma files in this directory automatically when you run
+// `prisma generate` / `prisma migrate dev`. No imports needed between them,
+// relations across files just work.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
