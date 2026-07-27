@@ -1,0 +1,12 @@
+// Phase 0: just wiring Prisma to Postgres so `prisma migrate dev` works.
+// Real tables (User, Workspace, Workflow, ...) get added in Phase 1,
+// following docs/models.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
