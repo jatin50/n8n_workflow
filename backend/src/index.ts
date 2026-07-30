@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth.routes";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -15,9 +16,6 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Phase 0: just prove the server is alive and configured.
-// Real routes (auth, workspaces, workflows, ...) get added from Phase 2 onward,
-// following docs/api.md.
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
@@ -25,6 +23,10 @@ app.get("/health", (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Phase 2: authentication. Workspace/workflow routes follow in Phase 3,
+// per docs/api.md.
+app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
