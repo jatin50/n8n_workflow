@@ -6,7 +6,7 @@ current one runs end-to-end.
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation --done
 
 Goal: a clean, runnable skeleton before any feature work.
 
@@ -21,7 +21,7 @@ Goal: a clean, runnable skeleton before any feature work.
 
 ---
 
-## Phase 1 — Database Schema
+## Phase 1 — Database Schema --done
 
 Goal: all core tables exist and migrate cleanly.
 
@@ -35,7 +35,7 @@ Goal: all core tables exist and migrate cleanly.
 
 ---
 
-## Phase 2 — Authentication
+## Phase 2 — Authentication --done
 
 Goal: users can register, log in, and hit protected routes.
 
@@ -48,7 +48,7 @@ Goal: users can register, log in, and hit protected routes.
 
 ---
 
-## Phase 3 — Workspaces & Workflows (CRUD only, no execution yet)
+## Phase 3 — Workspaces & Workflows (CRUD only, no execution yet)  -- done
 
 Goal: users can create and manage workflow "shells" — no running yet.
 
