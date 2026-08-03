@@ -1,0 +1,220 @@
+import { useCallback, useEffect, useState, type DragEvent } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  MiniMap,
+  addEdge,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  type Connection,
+  type Node,
+  type Edge,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+
+import { fetchGraph, saveGraph, type ApiNode, type ApiConnection } from "../lib/graph.api";
+import { getNodeTypeDef, type NodeConfig } from "../nodes/nodeTypes";
+import WorkflowNode, { type WorkflowNodeData } from "../components/WorkFlow";
+import NodePalette from "../components/NodePalette";
+import NodeConfigPanel from "../components/NodeConfigPanel";
+
+const nodeTypes = { workflowNode: WorkflowNode };
+
+function apiNodeToFlowNode(n: ApiNode): Node {
+  return {
+    id: n.id,
+    type: "workflowNode",
+    position: { x: n.positionX, y: n.positionY },
+    data: { nodeType: n.type, configuration: n.configuration } as WorkflowNodeData,
+  };
+}
+
+function apiConnectionToEdge(c: ApiConnection, index: number): Edge {
+  return {
+    id: c.id ?? `edge-${index}-${c.sourceNode}-${c.targetNode}`,
+    source: c.sourceNode,
+    target: c.targetNode,
+    sourceHandle: c.sourceHandle ?? undefined,
+    targetHandle: c.targetHandle ?? undefined,
+  };
+}
+
+function EditorCanvas({ workflowId }: { workflowId: string }) {
+  const queryClient = useQueryClient();
+  const { screenToFlowPosition } = useReactFlow();
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [loadedOnce, setLoadedOnce] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["graph", workflowId],
+    queryFn: () => fetchGraph(workflowId),
+  });
+
+  // Sync server data into React Flow's own state exactly once per load —
+  // after that, the canvas owns the state until the next explicit Save.
+  useEffect(() => {
+    if (data && !loadedOnce) {
+      setNodes(data.nodes.map(apiNodeToFlowNode));
+      setEdges(data.connections.map(apiConnectionToEdge));
+      setLoadedOnce(true);
+    }
+  }, [data, loadedOnce, setNodes, setEdges]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const apiNodes: ApiNode[] = nodes.map((n) => ({
+        id: n.id,
+        type: (n.data as unknown as WorkflowNodeData).nodeType,
+        positionX: n.position.x,
+        positionY: n.position.y,
+        configuration: (n.data as unknown as WorkflowNodeData).configuration ?? {},
+      }));
+      const apiConnections: ApiConnection[] = edges.map((e) => ({
+        sourceNode: e.source,
+        targetNode: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+      }));
+      return saveGraph(workflowId, apiNodes, apiConnections);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", workflowId] });
+    },
+  });
+
+  const onConnect = useCallback(
+    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+    [setEdges]
+  );
+
+  const onDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      const nodeType = e.dataTransfer.getData("application/workflow-node-type");
+      if (!nodeType) return;
+
+      const def = getNodeTypeDef(nodeType);
+      const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+
+      const newNode: Node = {
+        id: crypto.randomUUID(),
+        type: "workflowNode",
+        position,
+        data: { nodeType, configuration: { ...def.defaultConfig } } as WorkflowNodeData,
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    },
+    [screenToFlowPosition, setNodes]
+  );
+
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+
+  function updateSelectedNodeConfig(configuration: NodeConfig) {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === selectedNodeId
+          ? { ...n, data: { ...(n.data as object), configuration } as WorkflowNodeData }
+          : n
+      )
+    );
+  }
+
+  function deleteSelectedNode() {
+    setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+    setSelectedNodeId(null);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-950 text-slate-400">
+        Loading workflow...
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-slate-950">
+      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+        <Link to=".." relative="path" className="text-sm text-slate-500 hover:text-slate-300">
+          &larr; Back to workspace
+        </Link>
+        <div className="flex items-center gap-3">
+          {saveMutation.isSuccess && (
+            <span className="text-xs text-emerald-400">Saved</span>
+          )}
+          {saveMutation.isError && (
+            <span className="text-xs text-red-400">Save failed</span>
+          )}
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-md px-4 py-1.5 text-sm font-medium transition"
+          >
+            {saveMutation.isPending ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex min-h-0">
+        <NodePalette />
+
+        <div className="flex-1" onDragOver={onDragOver} onDrop={onDrop}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+            onPaneClick={() => setSelectedNodeId(null)}
+            fitView
+            colorMode="dark"
+          >
+            <Background />
+            <Controls />
+            <MiniMap />
+          </ReactFlow>
+        </div>
+
+        {selectedNode && (
+          <NodeConfigPanel
+            nodeType={(selectedNode.data as unknown as WorkflowNodeData).nodeType}
+            configuration={(selectedNode.data as unknown as WorkflowNodeData).configuration ?? {}}
+            onChange={updateSelectedNodeConfig}
+            onDelete={deleteSelectedNode}
+            onClose={() => setSelectedNodeId(null)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WorkflowEditorPage() {
+  const { workflowId } = useParams<{ workflowId: string }>();
+  if (!workflowId) return null;
+
+  return (
+    <ReactFlowProvider>
+      <EditorCanvas workflowId={workflowId} />
+    </ReactFlowProvider>
+  );
+}
+
+export default WorkflowEditorPage;
