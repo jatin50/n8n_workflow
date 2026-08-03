@@ -60,7 +60,7 @@ Goal: users can create and manage workflow "shells" — no running yet.
 
 ---
 
-## Phase 4 — Workflow Editor Canvas
+## Phase 4 — Workflow Editor Canvas -- done
 
 Goal: the visual drag-and-drop builder, saving to the DB — still no execution.
 
