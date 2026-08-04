@@ -18,10 +18,12 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { fetchGraph, saveGraph, type ApiNode, type ApiConnection } from "../lib/graph.api";
+import { testWorkflow, type TestRunResult } from "../lib/execution.api";
 import { getNodeTypeDef, type NodeConfig } from "../nodes/nodeTypes";
 import WorkflowNode, { type WorkflowNodeData } from "../components/WorkFlow";
 import NodePalette from "../components/NodePalette";
 import NodeConfigPanel from "../components/NodeConfigPanel";
+import TestResultsPanel from "../components/TestResultsPanel";
 
 const nodeTypes = { workflowNode: WorkflowNode };
 
@@ -52,6 +54,7 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [testResult, setTestResult] = useState<TestRunResult | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["graph", workflowId],
@@ -68,24 +71,44 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
     }
   }, [data, loadedOnce, setNodes, setEdges]);
 
+  function buildGraphPayload() {
+    const apiNodes: ApiNode[] = nodes.map((n) => ({
+      id: n.id,
+      type: (n.data as unknown as WorkflowNodeData).nodeType,
+      positionX: n.position.x,
+      positionY: n.position.y,
+      configuration: (n.data as unknown as WorkflowNodeData).configuration ?? {},
+    }));
+    const apiConnections: ApiConnection[] = edges.map((e) => ({
+      sourceNode: e.source,
+      targetNode: e.target,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+    }));
+    return { apiNodes, apiConnections };
+  }
+
   const saveMutation = useMutation({
     mutationFn: () => {
-      const apiNodes: ApiNode[] = nodes.map((n) => ({
-        id: n.id,
-        type: (n.data as unknown as WorkflowNodeData).nodeType,
-        positionX: n.position.x,
-        positionY: n.position.y,
-        configuration: (n.data as unknown as WorkflowNodeData).configuration ?? {},
-      }));
-      const apiConnections: ApiConnection[] = edges.map((e) => ({
-        sourceNode: e.source,
-        targetNode: e.target,
-        sourceHandle: e.sourceHandle,
-        targetHandle: e.targetHandle,
-      }));
+      const { apiNodes, apiConnections } = buildGraphPayload();
       return saveGraph(workflowId, apiNodes, apiConnections);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", workflowId] });
+    },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: async () => {
+      // Test always runs against what's actually saved in the DB, so we
+      // save the current canvas state first — otherwise "Test" could show
+      // results for a graph the user hasn't actually persisted yet.
+      const { apiNodes, apiConnections } = buildGraphPayload();
+      await saveGraph(workflowId, apiNodes, apiConnections);
+      return testWorkflow(workflowId);
+    },
+    onSuccess: (result) => {
+      setTestResult(result);
       queryClient.invalidateQueries({ queryKey: ["graph", workflowId] });
     },
   });
@@ -163,9 +186,16 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-md px-4 py-1.5 text-sm font-medium transition"
+            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-md px-4 py-1.5 text-sm font-medium transition"
           >
             {saveMutation.isPending ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={() => testMutation.mutate()}
+            disabled={testMutation.isPending || nodes.length === 0}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-md px-4 py-1.5 text-sm font-medium transition"
+          >
+            {testMutation.isPending ? "Running..." : "Test workflow"}
           </button>
         </div>
       </div>
@@ -202,6 +232,10 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
           />
         )}
       </div>
+
+      {testResult && (
+        <TestResultsPanel result={testResult} onClose={() => setTestResult(null)} />
+      )}
     </div>
   );
 }
