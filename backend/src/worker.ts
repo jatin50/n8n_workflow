@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "node:dns";
 import { Worker, Job } from "bullmq";
 import { Prisma } from "@prisma/client";
 import { connection } from "./queue/connection";
@@ -16,6 +17,10 @@ interface DbConnection {
   sourceNode: string;
   targetNode: string;
 }
+
+// Same fix as index.ts — the worker is a separate process, so it needs
+// this set independently, not just the main server.
+dns.setDefaultResultOrder("ipv4first");
 
 async function processJob(job: Job<ExecutionJobData>) {
   const { executionId, workflowId } = job.data;

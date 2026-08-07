@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "node:dns";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -10,6 +11,12 @@ import { authenticate } from "./middleware/auth.middleware";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+
+// Node's fetch tries IPv6 first by default. On networks with broken/slow
+// IPv6 routing (common on some home routers), this causes HTTP Request
+// nodes to hang until they time out even though the URL is fine —
+// forcing IPv4-first resolution fixes it.
+dns.setDefaultResultOrder("ipv4first");
 
 app.use(
   cors({
