@@ -4,6 +4,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import WorkflowEditorPage from "./pages/WorkflowEditorPage";
+import ExecutionsPage from "./pages/ExecutionsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -32,6 +33,14 @@ function App() {
         element={
           <ProtectedRoute>
             <WorkflowEditorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workflows/:workflowId/executions"
+        element={
+          <ProtectedRoute>
+            <ExecutionsPage />
           </ProtectedRoute>
         }
       />
