@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import workspaceRoutes from "./routes/workspace.routes";
 import workflowRoutes from "./routes/workflow.routes";
+import executionRoutes from "./routes/execution.routes";
 import { authenticate } from "./middleware/auth.middleware";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/auth", authRoutes);
 // Everything below this line requires a valid access token.
 app.use("/api/workspaces", authenticate, workspaceRoutes);
 app.use("/api/workflows", authenticate, workflowRoutes);
+app.use("/api/executions", authenticate, executionRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
