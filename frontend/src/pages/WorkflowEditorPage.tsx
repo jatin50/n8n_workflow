@@ -177,6 +177,12 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
           &larr; Back to workspace
         </Link>
         <div className="flex items-center gap-3">
+          <Link
+            to={`/workflows/${workflowId}/executions`}
+            className="text-sm text-slate-400 hover:text-slate-200 transition"
+          >
+            Executions
+          </Link>
           {saveMutation.isSuccess && (
             <span className="text-xs text-emerald-400">Saved</span>
           )}
