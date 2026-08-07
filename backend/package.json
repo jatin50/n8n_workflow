@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
+    "worker": "nodemon --watch src --ext ts --exec ts-node src/worker.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
@@ -18,10 +19,12 @@
   "dependencies": {
     "@prisma/client": "6.19.3",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.34.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.3",
     "prisma": "6.19.3"
   },
@@ -31,7 +34,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.9.5",
+    "@types/node": "^25.9.2",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
