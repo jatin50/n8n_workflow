@@ -3,6 +3,7 @@ import { getWorkflow, updateWorkflow, deleteWorkflow } from "../controllers/work
 import { getGraph, saveGraph } from "../controllers/graph.controller";
 import { testWorkflow } from "../controllers/execution.controller";
 import { startExecution, listExecutions } from "../controllers/execution-async.controller";
+import { listTriggers } from "../controllers/trigger.controller";
 
 const router = Router();
 
@@ -20,5 +21,8 @@ router.post("/:id/test", testWorkflow);
 // Phase 6: async execution via the BullMQ queue.
 router.post("/:id/executions", startExecution);
 router.get("/:id/executions", listExecutions);
+
+// Phase 7: trigger info (webhook URLs, schedule config) for the editor's config panel.
+router.get("/:id/triggers", listTriggers);
 
 export default router;

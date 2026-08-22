@@ -1,10 +1,14 @@
 model Trigger {
-  id            String @id @default(cuid())
+  id            String   @id @default(cuid())
   workflowId    String
-  type          String // e.g. "webhook", "schedule", "manual"
-  configuration Json   @default("{}")
+  nodeId        String   @unique // the trigger.webhook / trigger.schedule node this backs
+  type          String // "webhook" | "schedule"
+  configuration Json     @default("{}") // schedule: { cron: string }; webhook: {} (token has its own column)
+  webhookToken  String?  @unique // public URL secret, only set for type "webhook"
+  createdAt     DateTime @default(now())
 
   workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  node     Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
   @@index([workflowId])
   @@map("triggers")

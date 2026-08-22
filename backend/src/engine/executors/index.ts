@@ -1,5 +1,7 @@
 import { NodeExecutor } from "../types";
 import manualTrigger from "./manualTrigger";
+import webhookTrigger from "./webhookTrigger";
+import scheduleTrigger from "./scheduleTrigger";
 import httpRequest from "./httpRequest";
 import ifNode from "./ifNode";
 import setVariable from "./setVariable";
@@ -9,6 +11,8 @@ import setVariable from "./setVariable";
 // NodeConfigPanel — nothing else in the engine needs to change.
 export const EXECUTORS: Record<string, NodeExecutor> = {
   "trigger.manual": manualTrigger,
+  "trigger.webhook": webhookTrigger,
+  "trigger.schedule": scheduleTrigger,
   "http.request": httpRequest,
   "logic.if": ifNode,
   "data.setVariable": setVariable,

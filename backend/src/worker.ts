@@ -23,18 +23,39 @@ interface DbConnection {
 dns.setDefaultResultOrder("ipv4first");
 
 async function processJob(job: Job<ExecutionJobData>) {
-  const { executionId, workflowId } = job.data;
+  const { workflowId, triggerNodeId } = job.data;
+  let { executionId } = job.data;
   const startedAt = new Date();
 
-  await prisma.execution.update({
-    where: { id: executionId },
-    data: { status: "RUNNING", startedAt },
-  });
+  // A schedule tick has no pre-created Execution row (nothing called an
+  // endpoint to make one) — it makes its own here, the moment it actually
+  // fires.
+  if (!executionId) {
+    const execution = await prisma.execution.create({
+      data: { workflowId, status: "RUNNING", startedAt },
+    });
+    executionId = execution.id;
+  } else {
+    await prisma.execution.update({
+      where: { id: executionId },
+      data: { status: "RUNNING", startedAt },
+    });
+  }
 
   const [nodes, connections] = await Promise.all([
     prisma.node.findMany({ where: { workflowId } }),
     prisma.connection.findMany({ where: { workflowId } }),
   ]);
+
+  // Seed the trigger node's output with real data instead of its
+  // executor's generic stub — a webhook's request body, or a schedule
+  // tick's fire time.
+  const triggerOverrides: Record<string, unknown> | undefined = triggerNodeId
+    ? {
+        [triggerNodeId]:
+          job.data.payload ?? { source: "schedule", triggeredAt: startedAt.toISOString() },
+      }
+    : undefined;
 
   try {
     const { status, results } = await runWorkflowTest(
@@ -43,7 +64,8 @@ async function processJob(job: Job<ExecutionJobData>) {
         type: n.type,
         configuration: n.configuration as Record<string, unknown>,
       })),
-      connections.map((c: DbConnection) => ({ sourceNode: c.sourceNode, targetNode: c.targetNode }))
+      connections.map((c: DbConnection) => ({ sourceNode: c.sourceNode, targetNode: c.targetNode })),
+      triggerOverrides
     );
 
     const finishedAt = new Date();

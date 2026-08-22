@@ -10,6 +10,7 @@ model Node {
   outgoingConnections Connection[]    @relation("SourceNode")
   incomingConnections Connection[]    @relation("TargetNode")
   executionData       ExecutionData[]
+  trigger             Trigger?
 
   @@index([workflowId])
   @@map("nodes")

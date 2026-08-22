@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import workspaceRoutes from "./routes/workspace.routes";
 import workflowRoutes from "./routes/workflow.routes";
 import executionRoutes from "./routes/execution.routes";
+import webhookRoutes from "./routes/webhook.routes";
 import { authenticate } from "./middleware/auth.middleware";
 
 const app = express();
@@ -43,6 +44,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", authenticate, workspaceRoutes);
 app.use("/api/workflows", authenticate, workflowRoutes);
 app.use("/api/executions", authenticate, executionRoutes);
+
+// Phase 7: public webhook endpoint — deliberately NOT behind `authenticate`,
+// since external systems calling this have no JWT. Security instead comes
+// from the unguessable per-trigger token in the URL itself.
+app.use("/api/webhooks", webhookRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
