@@ -48,7 +48,8 @@ function topologicalSort(nodes: EngineNode[], connections: EngineConnection[]): 
 
 export async function runWorkflowTest(
   nodes: EngineNode[],
-  connections: EngineConnection[]
+  connections: EngineConnection[],
+  triggerOverrides?: Record<string, unknown>
 ): Promise<{ status: "success" | "failed"; results: NodeExecutionResult[] }> {
   const order = topologicalSort(nodes, connections);
   const nodesById = new Map(nodes.map((n) => [n.id, n]));
@@ -88,8 +89,15 @@ export async function runWorkflowTest(
 
     const startedAt = Date.now();
     try {
-      const executor = getExecutor(node.type);
-      const output = await executor(node.configuration, input, context);
+      // A webhook/schedule trigger's real payload takes priority over its
+      // executor's generic stub output — this is how external data (a
+      // webhook's request body, a schedule tick's timestamp) actually
+      // enters the graph.
+      const hasOverride = triggerOverrides && nodeId in triggerOverrides;
+      const output = hasOverride
+        ? triggerOverrides![nodeId]
+        : await getExecutor(node.type)(node.configuration, input, context);
+
       outputs.set(nodeId, output);
       results.push({
         nodeId,
