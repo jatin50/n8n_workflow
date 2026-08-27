@@ -19,6 +19,7 @@ import "@xyflow/react/dist/style.css";
 
 import { fetchGraph, saveGraph, type ApiNode, type ApiConnection } from "../lib/graph.api";
 import { testWorkflow, type TestRunResult } from "../lib/execution.api";
+import { fetchTriggers } from "../lib/trigger.api";
 import { getNodeTypeDef, type NodeConfig } from "../nodes/nodeTypes";
 import WorkflowNode, { type WorkflowNodeData } from "../components/WorkFlow";
 import NodePalette from "../components/NodePalette";
@@ -61,6 +62,11 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
     queryFn: () => fetchGraph(workflowId),
   });
 
+  const { data: triggers } = useQuery({
+    queryKey: ["triggers", workflowId],
+    queryFn: () => fetchTriggers(workflowId),
+  });
+
   // Sync server data into React Flow's own state exactly once per load —
   // after that, the canvas owns the state until the next explicit Save.
   useEffect(() => {
@@ -95,6 +101,7 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["graph", workflowId] });
+      queryClient.invalidateQueries({ queryKey: ["triggers", workflowId] });
     },
   });
 
@@ -145,6 +152,7 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
   );
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  const selectedNodeTrigger = triggers?.find((t) => t.nodeId === selectedNodeId);
 
   function updateSelectedNodeConfig(configuration: NodeConfig) {
     setNodes((nds) =>
@@ -235,6 +243,7 @@ function EditorCanvas({ workflowId }: { workflowId: string }) {
             onChange={updateSelectedNodeConfig}
             onDelete={deleteSelectedNode}
             onClose={() => setSelectedNodeId(null)}
+            webhookUrl={selectedNodeTrigger?.webhookUrl}
           />
         )}
       </div>
