@@ -4,6 +4,7 @@ import { getGraph, saveGraph } from "../controllers/graph.controller";
 import { testWorkflow } from "../controllers/execution.controller";
 import { startExecution, listExecutions } from "../controllers/execution-async.controller";
 import { listTriggers } from "../controllers/trigger.controller";
+import { listCredentialsForWorkflow } from "../controllers/credentials.controller";
 
 const router = Router();
 
@@ -24,5 +25,8 @@ router.get("/:id/executions", listExecutions);
 
 // Phase 7: trigger info (webhook URLs, schedule config) for the editor's config panel.
 router.get("/:id/triggers", listTriggers);
+
+// Phase 8: credentials available to this workflow's node config panel.
+router.get("/:id/credentials", listCredentialsForWorkflow);
 
 export default router;
