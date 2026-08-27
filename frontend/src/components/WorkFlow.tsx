@@ -7,6 +7,8 @@ import { getNodeTypeDef, type NodeConfig } from "../nodes/nodeTypes";
 // scanner, so every color variant is spelled out here instead.
 const ACCENT_CLASSES: Record<string, { border: string; dot: string }> = {
   emerald: { border: "border-emerald-600", dot: "bg-emerald-500" },
+  teal: { border: "border-teal-600", dot: "bg-teal-500" },
+  purple: { border: "border-purple-600", dot: "bg-purple-500" },
   indigo: { border: "border-indigo-600", dot: "bg-indigo-500" },
   amber: { border: "border-amber-600", dot: "bg-amber-500" },
   sky: { border: "border-sky-600", dot: "bg-sky-500" },

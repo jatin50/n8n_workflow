@@ -2,6 +2,8 @@ import { NODE_TYPES } from "../nodes/nodeTypes";
 
 const ACCENT_DOT: Record<string, string> = {
   emerald: "bg-emerald-500",
+  teal: "bg-teal-500",
+  purple: "bg-purple-500",
   indigo: "bg-indigo-500",
   amber: "bg-amber-500",
   sky: "bg-sky-500",
