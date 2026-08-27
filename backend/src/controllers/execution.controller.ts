@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { runWorkflowTest } from "../engine/engine";
+import { resolveNodeCredentials } from "../engine/resolveCredentials";
 
 interface DbNode {
   id: string;
@@ -34,12 +35,15 @@ export async function testWorkflow(req: Request, res: Response) {
   }
 
   try {
+    const plainNodes = nodes.map((n: DbNode) => ({
+      id: n.id,
+      type: n.type,
+      configuration: n.configuration as Record<string, unknown>,
+    }));
+    const resolvedNodes = await resolveNodeCredentials(plainNodes, workflow.workspaceId);
+
     const { status, results } = await runWorkflowTest(
-      nodes.map((n: DbNode) => ({
-        id: n.id,
-        type: n.type,
-        configuration: n.configuration as Record<string, unknown>,
-      })),
+      resolvedNodes,
       connections.map((c: DbConnection) => ({ sourceNode: c.sourceNode, targetNode: c.targetNode }))
     );
 
