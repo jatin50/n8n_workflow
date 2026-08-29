@@ -8,6 +8,7 @@ import workspaceRoutes from "./routes/workspace.routes";
 import workflowRoutes from "./routes/workflow.routes";
 import executionRoutes from "./routes/execution.routes";
 import webhookRoutes from "./routes/webhook.routes";
+import credentialRoutes from "./routes/credential.routes";
 import { authenticate } from "./middleware/auth.middleware";
 
 const app = express();
@@ -44,6 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", authenticate, workspaceRoutes);
 app.use("/api/workflows", authenticate, workflowRoutes);
 app.use("/api/executions", authenticate, executionRoutes);
+app.use("/api/credentials", authenticate, credentialRoutes);
 
 // Phase 7: public webhook endpoint — deliberately NOT behind `authenticate`,
 // since external systems calling this have no JWT. Security instead comes

@@ -6,6 +6,7 @@ import { connection } from "./queue/connection";
 import { EXECUTION_QUEUE_NAME, ExecutionJobData } from "./queue/executionQueue";
 import prisma from "./lib/prisma";
 import { runWorkflowTest } from "./engine/engine";
+import { resolveNodeCredentials } from "./engine/resolveCredentials";
 
 interface DbNode {
   id: string;
@@ -42,7 +43,8 @@ async function processJob(job: Job<ExecutionJobData>) {
     });
   }
 
-  const [nodes, connections] = await Promise.all([
+  const [workflow, nodes, connections] = await Promise.all([
+    prisma.workflow.findUniqueOrThrow({ where: { id: workflowId }, select: { workspaceId: true } }),
     prisma.node.findMany({ where: { workflowId } }),
     prisma.connection.findMany({ where: { workflowId } }),
   ]);
@@ -58,12 +60,15 @@ async function processJob(job: Job<ExecutionJobData>) {
     : undefined;
 
   try {
+    const plainNodes = nodes.map((n: DbNode) => ({
+      id: n.id,
+      type: n.type,
+      configuration: n.configuration as Record<string, unknown>,
+    }));
+    const resolvedNodes = await resolveNodeCredentials(plainNodes, workflow.workspaceId);
+
     const { status, results } = await runWorkflowTest(
-      nodes.map((n: DbNode) => ({
-        id: n.id,
-        type: n.type,
-        configuration: n.configuration as Record<string, unknown>,
-      })),
+      resolvedNodes,
       connections.map((c: DbConnection) => ({ sourceNode: c.sourceNode, targetNode: c.targetNode })),
       triggerOverrides
     );
